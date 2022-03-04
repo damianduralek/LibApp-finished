@@ -1,0 +1,110 @@
+@{
+    ViewBag.Title = "Books";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Books</h2>
+@if (this.User.IsInRole("Owner") || this.User.IsInRole("StoreManager"))
+{
+    <p>
+        <a class="btn btn-primary" asp-action="New">New Book</a>
+    </p>
+}
+
+<table id="books" class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Book</th>
+            <th>Genre</th>
+            <th>Author</th>
+            @if (this.User.IsInRole("Owner") || this.User.IsInRole("StoreManager"))
+            {
+                <th>Delete</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+@section Scripts
+{
+    @if (this.User.IsInRole("Owner") || this.User.IsInRole("StoreManager"))
+    {
+        <script>
+            var canDelete = true;
+        </script>
+    }
+    else
+    {
+        <script>
+            var canDelete = false;
+        </script>
+    }
+    <script>
+        $(document).ready(function () {
+            var columnsDef = [
+                {
+                    data: "name",
+                    render: function (data, type, book) {
+                        return "<a href='books/details/" + book.id + "'>" + book.name + "</a>";
+                    }
+                },
+                {
+                    data: "genre.name"
+                },
+                {
+                    data: "authorName"
+                }
+            ];
+            if (canDelete) {
+                columnsDef.push({
+                    data: "id",
+                    render: function (data) {
+                        return "<button class='btn btn-secondary js-delete' data-book-id=" + data + ">Delete</button>";
+                    }
+                });
+            }
+            $("#books").DataTable({
+                ajax: {
+                    url: "api/books/",
+                    dataSrc: ""
+                },
+                columns: columnsDef
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            var table = $("#books").DataTable();
+            $("#books").on("click", ".js-delete", function () {
+                var button = $(this);
+                bootbox.confirm({
+                    message: "Confirm book deletion?",
+                    buttons: {
+                        confirm: {
+                            label: 'Yes',
+                            className: 'btn-success'
+                        },
+                        cancel: {
+                            label: 'No',
+                            className: 'btn-danger'
+                        }
+                    },
+                    callback: function (result) {
+                        if (result) {
+                            $.ajax({
+                                url: "/api/books/" + button.attr("data-book-id"),
+                                method: "DELETE",
+                                success: function () {
+                                    table.row(button.parents("tr")).remove().draw();
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        })
+    </script>
+}
